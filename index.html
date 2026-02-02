@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>waqaschat</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Theme Selector -->
+    <div class="theme-selector">
+        <button class="theme-btn dark" title="Dark Theme" onclick="switchTheme('dark')">🌑</button>
+        <button class="theme-btn light" title="Light Theme" onclick="switchTheme('light')">☀️</button>
+        <button class="theme-btn vip" title="VIP Theme" onclick="switchTheme('vip')">💗</button>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container glassmorphism">
+            <div class="app-logo">
+                <i class="fas fa-comments"></i>
+                <h1>WAQASCHAT</h1>
+                <p class="tagline">VIP Group Messenger</p>
+            </div>
+            
+            <div class="login-options">
+                <div class="user-login">
+                    <h3>Join as User</h3>
+                    <input type="text" id="userName" placeholder="Enter your name" maxlength="20">
+                    <button onclick="joinAsUser()" class="btn-gradient">Join Chat</button>
+                </div>
+                
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+                
+                <div class="admin-login">
+                    <h3>Admin Login</h3>
+                    <button onclick="loginAsAdmin()" class="btn-admin">
+                        <i class="fab fa-google"></i> Login with Google
+                    </button>
+                </div>
+            </div>
+            
+            <div class="creator-credit" id="creatorCredit">
+               waqashamza47
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Screen -->
+    <div id="chatScreen" class="screen">
+        <div class="chat-container">
+            <!-- Top Bar -->
+            <div class="top-bar glassmorphism">
+                <div class="top-left">
+                    <i class="fas fa-comments logo-icon"></i>
+                    <h2>WAQASCHAT</h2>
+                </div>
+                <div class="top-right">
+                    <button class="icon-btn" onclick="showAbout()" title="About App">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                    <button class="icon-btn logout-btn" onclick="logout()" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div class="messages-container" id="messagesContainer">
+                <!-- Messages will be loaded here -->
+            </div>
+
+            <!-- Reply Preview -->
+            <div class="reply-preview" id="replyPreview">
+                <div class="reply-content">
+                    <span class="replying-to">Replying to:</span>
+                    <span class="reply-text" id="replyText"></span>
+                </div>
+                <button class="cancel-reply" onclick="cancelReply()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Message Input -->
+            <div class="input-container glassmorphism">
+                <div class="input-wrapper">
+                    <input type="text" 
+                           id="messageInput" 
+                           placeholder="Type your message..." 
+                           onkeypress="handleKeyPress(event)">
+                    <div class="input-actions">
+                        <button class="send-btn" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="admin-header">
+            <h3><i class="fas fa-shield-alt"></i> Admin Controls</h3>
+            <button class="close-admin" onclick="toggleAdminPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="admin-content">
+            <div class="admin-section">
+                <h4><i class="fas fa-edit"></i> Edit About Content</h4>
+                <textarea id="aboutContent" placeholder="Enter about app content..."></textarea>
+                <button class="btn-admin" onclick="updateAbout()">Update About</button>
+            </div>
+            
+            <div class="admin-section">
+                <h4><i class="fas fa-users-cog"></i> User Management</h4>
+                <div class="user-list" id="userList">
+                    <!-- Users will be loaded here -->
+                </div>
+            </div>
+            
+            <div class="admin-section">
+                <h4><i class="fas fa-comment-slash"></i> Message Management</h4>
+                <div class="message-list" id="adminMessageList">
+                    <!-- Messages for admin will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content glassmorphism">
+            <div class="modal-header">
+                <h3>About WAQAS-CHAT</h3>
+                <button class="close-modal" onclick="closeAbout()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="aboutContentDisplay">
+                Welcome to EliteChat! A premium real-time group messaging experience.
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Toggle Button -->
+    <button class="admin-toggle-btn" onclick="toggleAdminPanel()" id="adminToggleBtn">
+        <i class="fas fa-shield-alt"></i>
+    </button>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="firebase.js"></script>
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentTheme = 'dark';
+        let replyingTo = null;
+        let isAdmin = false;
+
+        // Initialize
+        window.onload = function() {
+            checkAuth();
+            loadTheme();
+        };
+
+        // Theme Management
+        function switchTheme(theme) {
+            currentTheme = theme;
+            document.body.className = theme + '-theme';
+            localStorage.setItem('chatTheme', theme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('chatTheme') || 'dark';
+            switchTheme(savedTheme);
+        }
+
+        // Screen Management
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // User Functions
+        function joinAsUser() {
+            const userName = document.getElementById('userName').value.trim();
+            if (!userName) {
+                alert('Please enter your name');
+                return;
+            }
+            
+            currentUser = {
+                id: 'user_' + Date.now(),
+                name: userName,
+                isAdmin: false,
+                isBlocked: false
+            };
+            
+            localStorage.setItem('chatUser', JSON.stringify(currentUser));
+            showScreen('chatScreen');
+            initChat();
+        }
+
+        function loginAsAdmin() {
+            loginWithGoogle();
+        }
+
+        function logout() {
+            if (isAdmin) {
+                logoutAdmin();
+            }
+            currentUser = null;
+            localStorage.removeItem('chatUser');
+            showScreen('loginScreen');
+        }
+
+        function showAbout() {
+            document.getElementById('aboutModal').style.display = 'flex';
+            loadAboutContent();
+        }
+
+        function closeAbout() {
+            document.getElementById('aboutModal').style.display = 'none';
+        }
+
+        function toggleAdminPanel() {
+            const panel = document.getElementById('adminPanel');
+            panel.classList.toggle('active');
+        }
+
+        // Message Functions
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || !currentUser) return;
+            
+            if (currentUser.isBlocked) {
+                alert('You are blocked from sending messages');
+                return;
+            }
+            
+            const messageData = {
+                text: message,
+                senderId: currentUser.id,
+                senderName: currentUser.name,
+                timestamp: Date.now(),
+                reactions: {},
+                replyTo: replyingTo
+            };
+            
+            sendMessageToFirebase(messageData);
+            input.value = '';
+            cancelReply();
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function replyToMessage(messageId, messageText) {
+            replyingTo = {
+                id: messageId,
+                text: messageText.substring(0, 50) + (messageText.length > 50 ? '...' : '')
+            };
+            
+            document.getElementById('replyPreview').style.display = 'flex';
+            document.getElementById('replyText').textContent = replyingTo.text;
+            document.getElementById('messageInput').focus();
+        }
+
+        function cancelReply() {
+            replyingTo = null;
+            document.getElementById('replyPreview').style.display = 'none';
+        }
+
+        function reactToMessage(messageId, emoji) {
+            if (!currentUser) return;
+            addReaction(messageId, currentUser.id, emoji);
+        }
+
+        // Admin Functions
+        function updateAbout() {
+            const content = document.getElementById('aboutContent').value;
+            updateAboutContent(content);
+        }
+
+        function deleteMessage(messageId) {
+            if (confirm('Are you sure you want to delete this message?')) {
+                deleteMessageFromFirebase(messageId);
+            }
+        }
+
+        function toggleMessageVisibility(messageId, isHidden) {
+            toggleMessageHidden(messageId, !isHidden);
+        }
+
+        function toggleUserBlock(userId, isBlocked) {
+            toggleUserBlocked(userId, !isBlocked);
+        }
+
+        // Click outside to close modals
+        window.onclick = function(event) {
+            const modal = document.getElementById('aboutModal');
+            if (event.target === modal) {
+                closeAbout();
+            }
+        }
+    </script>
+</body>
+</html>
